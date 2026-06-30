@@ -1,23 +1,10 @@
 import pickle
-from itertools import islice
 from pathlib import Path
-from pydoc import Doc
-from xml.dom.minidom import Document
 
-from joblib.externals.loky.backend import context
 from langchain_community.retrievers import BM25Retriever
-from promt.rag_promt import rag_prompt
-from rank_bm25 import BM25Okapi
-from langchain_chroma import Chroma
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_huggingface import HuggingFaceEmbeddings
-from pandas.core.window import doc
-from sympy.physics.units import temperature
-
+from Model.model import vector_store
+import Model.model
 from core import config
-from promt import rag_promt
 
 
 def load_bm25_retriever(m=20):
@@ -38,22 +25,9 @@ def load_bm25_retriever(m=20):
     return bm25_retriever
 
 
-def format_docs(docs):
-    return "\n".join(doc.page_content for doc in docs)
-
-
 def load_vector_retriever(k: int = 20):
-    embeddings = HuggingFaceEmbeddings(
-        model_name=config.MODEL_NAME,
-        model_kwargs={"trust_remote_code": True}
-    )
 
-    vector_store = Chroma(
-        persist_directory=config.CHROMA_DB_DIR,
-        embedding_function=embeddings
-    )
-
-    vector_retriever = vector_store.as_retriever(
+    vector_retriever = Model.model.vector_store.as_retriever(
         search_kwargs={"k": k}
     )
     return vector_retriever
@@ -86,6 +60,7 @@ def printing_result(docs):
         print(f"| {paper_id}| {clean_content:<55} | {score_val:<20} |")
         print(f"{'-' * 83}")
 
+
 def printing_result1(docs):
     print(f"{'-' * 83}")
     print(f"| {'Paper ID':<20} | {'Document Snippet':<40} | {'RRF Score':<10} |")
@@ -95,6 +70,8 @@ def printing_result1(docs):
         score = f"{data['score']:.4f}"
         print(f"| {paper_id:<20} | {snippet:<40} | {score:<10} |")
         print(f"{'-' * 83}")
+
+
 def rrf_calculation(retrivers, k=60, num=10):
     rrm_rank = {}
     for r in retrivers:
@@ -109,11 +86,22 @@ def rrf_calculation(retrivers, k=60, num=10):
     return rrm_rank[:num]
 
 
+def rrf_retriver(user_query):
+    query = user_query
+
+    bm_load = load_bm25_retriever(20)
+    bm_result = ranked_doc(bm_load, query, k=20)
+
+    vector_retriever = load_vector_retriever(20)
+    vector_result = ranked_doc(vector_retriever, query, k=20)
+
+    rrf_result = rrf_calculation([bm_result, vector_result], 60, 10)
+
+    return rrf_result
+
+
 if __name__ == "__main__":
-    llm = ChatGoogleGenerativeAI(
-        model=config.Gemini_MODEL_NAME,
-        temperature=0.3
-    )
+
     query = "what is prompt"
 
     bm_load = load_bm25_retriever(20)
@@ -128,4 +116,5 @@ if __name__ == "__main__":
 
     rrf_result = rrf_calculation([bm_result, vector_result], 60, 10)
     print("=== RRf results ===")
-    print(printing_result1(rrf_result))
+    print(rrf_result)
+   # print(printing_result1(rrf_result))

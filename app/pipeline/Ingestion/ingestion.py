@@ -7,7 +7,6 @@ import torch
 import concurrent.futures
 from pathlib import Path
 
-from langchain_community.retrievers import BM25Retriever
 from langchain_docling import DoclingLoader
 from docling.chunking import HybridChunker
 from langchain_docling.loader import ExportType
@@ -15,11 +14,10 @@ from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.pipeline_options import PdfPipelineOptions, TableFormerMode
 
-from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from transformers import AutoTokenizer
 
+import Model.model
 from core import config
 
 # --- OPTIMIZATION: Un-throttle CPU Cores ---
@@ -77,15 +75,9 @@ def count_tokens(text: str) -> int:
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device.upper()} for vector embeddings.")
 
-embeddings = HuggingFaceEmbeddings(
-    model_name=config.MODEL_NAME,
-    model_kwargs={"trust_remote_code": True, "device": device}
-)
+embeddings = Model.model.embeddings
 
-vector_store = Chroma(
-    persist_directory=config.CHROMA_DB_DIR,
-    embedding_function=embeddings
-)
+vector_store = Model.model.vector_store
 
 # Fallback splitter
 fallback_splitter = RecursiveCharacterTextSplitter(
