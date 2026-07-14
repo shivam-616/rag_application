@@ -23,9 +23,12 @@ from core import config
 # --- OPTIMIZATION: Un-throttle CPU Cores ---
 # Removed restrictive "1" thread limits to allow full hardware utilization.
 # Docling and PyTorch will now scale to your available CPU cores automatically.
-if "OMP_NUM_THREADS" in os.environ: del os.environ["OMP_NUM_THREADS"]
-if "MKL_NUM_THREADS" in os.environ: del os.environ["MKL_NUM_THREADS"]
-if "DOCLING_NUM_THREADS" in os.environ: del os.environ["DOCLING_NUM_THREADS"]
+if "OMP_NUM_THREADS" in os.environ:
+    del os.environ["OMP_NUM_THREADS"]
+if "MKL_NUM_THREADS" in os.environ:
+    del os.environ["MKL_NUM_THREADS"]
+if "DOCLING_NUM_THREADS" in os.environ:
+    del os.environ["DOCLING_NUM_THREADS"]
 
 os.environ["HF_TOKEN"] = config.HF_TOKEN
 
@@ -34,8 +37,7 @@ def clean_metadata_for_chroma(documents):
     allowed_types = (str, int, float, bool)
     for doc in documents:
         doc.metadata = {
-            k: v for k, v in doc.metadata.items()
-            if isinstance(v, allowed_types)
+            k: v for k, v in doc.metadata.items() if isinstance(v, allowed_types)
         }
     return documents
 
@@ -80,9 +82,7 @@ embeddings = Model.model.embeddings
 vector_store = Model.model.vector_store
 
 # Fallback splitter
-fallback_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=4000, chunk_overlap=400
-)
+fallback_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=400)
 
 # Deduplication tracker
 seen_file = Path(config.CHROMA_DB_DIR) / "ingested.json"
@@ -111,9 +111,7 @@ def process_single_pdf(pdf_file: Path):
         # Separate converter instance per thread to ensure thread safety
         converter = DocumentConverter(
             format_options={
-                InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=pipeline_options
-                )
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
             }
         )
 
@@ -149,7 +147,10 @@ def process_single_pdf(pdf_file: Path):
                 chunk.metadata["chunk_index"] = i
 
             filtered_chunks = clean_metadata_for_chroma(chunks)
-            return filtered_chunks, f"Successfully parsed {pdf_file.name} ({len(filtered_chunks)} chunks)"
+            return (
+                filtered_chunks,
+                f"Successfully parsed {pdf_file.name} ({len(filtered_chunks)} chunks)",
+            )
 
         return [], f"⚠️ Warning: No chunks generated for {pdf_file.name}"
 
@@ -160,7 +161,9 @@ def process_single_pdf(pdf_file: Path):
 # --- MAIN EXECUTION PIPELINE ---
 if __name__ == "__main__":
     pdf_files = list(config.PDF_LOCATION.glob("*.pdf"))
-    print(f"\nFound {len(pdf_files)} total PDFs | {len(seen_ids)} verified inside cache.\n")
+    print(
+        f"\nFound {len(pdf_files)} total PDFs | {len(seen_ids)} verified inside cache.\n"
+    )
 
     total_chunks_saved = 0
     failed = []
@@ -169,7 +172,9 @@ if __name__ == "__main__":
     # Adjust max_workers depending on hardware capabilities.
     # 4 is optimal for balanced RAM usage with Docling layouts.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        future_to_pdf = {executor.submit(process_single_pdf, pdf): pdf for pdf in pdf_files}
+        future_to_pdf = {
+            executor.submit(process_single_pdf, pdf): pdf for pdf in pdf_files
+        }
 
         for future in concurrent.futures.as_completed(future_to_pdf):
             pdf_file = future_to_pdf[future]
@@ -189,7 +194,7 @@ if __name__ == "__main__":
                     # Batch save straight into Chroma vector store
                     batch_size = 50
                     for i in range(0, len(result_chunks), batch_size):
-                        batch = result_chunks[i:i + batch_size]
+                        batch = result_chunks[i : i + batch_size]
                         vector_store.add_documents(documents=batch)
 
                     # Append chunks to global list for hybrid BM25 retrieval mapping
@@ -214,11 +219,15 @@ if __name__ == "__main__":
     if new_chunks_added:
         with open(bm25_store_path, "wb") as f:
             pickle.dump(bmdoc, f)
-        print(f"\n💾 Saved updated BM25 database state. Complete index count: {len(bmdoc)}")
+        print(
+            f"\n💾 Saved updated BM25 database state. Complete index count: {len(bmdoc)}"
+        )
     else:
         print("\nℹ️ No new files processed. BM25 storage file left intact.")
 
-    print(f"\n🎉 Pipeline Complete! New Chunks Saved: {total_chunks_saved} | Failed Runs: {len(failed)}")
+    print(
+        f"\n🎉 Pipeline Complete! New Chunks Saved: {total_chunks_saved} | Failed Runs: {len(failed)}"
+    )
     if failed:
         for f in failed:
             print(f"  - {f['file']}: {f['error']}")

@@ -4,6 +4,7 @@
 from operator import itemgetter
 
 from dotenv import load_dotenv
+from langsmith import traceable
 
 load_dotenv()
 
@@ -12,12 +13,16 @@ from langchain_core.output_parsers import StrOutputParser
 import psutil
 
 from Model.model import llm
-from pipeline.Retrieval.retriever import (rrf_retriver, rrf_multiquery_retriver, load_bm25_retriever,
-                                          load_vector_retriever)
+from pipeline.Retrieval.retriever import (
+    rrf_multiquery_retriver,
+    load_bm25_retriever,
+    load_vector_retriever,
+)
 from promt.multiquery_promt import MULTI_QUERY_PROMPT, LineListOutputParser
 from promt.rag_promt import rag_basic_prompt
 
 
+@traceable(run_type="chain", name="Document Context Formatter")
 def format_docs(docs):
     formatted = []
     for doc in docs:
@@ -44,26 +49,22 @@ def rag_chain(retriver):
     runnable_retriver = RunnableLambda(full_retrieval)
 
     single_query_chain = (
-            {"context": runnable_retriver, "question": RunnablePassthrough()}
-            | rag_basic_prompt
-            | llm
-            | output_parser
+        {"context": runnable_retriver, "question": RunnablePassthrough()}
+        | rag_basic_prompt
+        | llm
+        | output_parser
     )
     return single_query_chain
 
 
 def multi_query_generation_chain():
-    """ return a a list of query"""
-    generated_query = (
-            MULTI_QUERY_PROMPT
-            | llm
-            | LineListOutputParser()
-    )
+    """return a a list of query"""
+    generated_query = MULTI_QUERY_PROMPT | llm | LineListOutputParser()
     return generated_query
 
 
-def multiquery_rag_chain(retriver):
-    """ return a a list of query"""
+def multiquery_rag_chain():
+    """return a a list of query"""
 
     output_parser = StrOutputParser()
     query_gen_chain = multi_query_generation_chain()
@@ -91,18 +92,17 @@ def multiquery_rag_chain(retriver):
     runnable_retrieval = RunnableLambda(full_retrieval)
 
     Multi_query_chain = (
-            {"context": runnable_retrieval, "question": itemgetter("question")}
-            | rag_basic_prompt
-            | llm
-            | output_parser
+        {"context": runnable_retrieval, "question": itemgetter("question")}
+        | rag_basic_prompt
+        | llm
+        | output_parser
     )
     return Multi_query_chain
 
 
 if __name__ == "__main__":
     questions = [
-        "rag application"
-        "What is retrieval augmented generation?",
+        "rag applicationWhat is retrieval augmented generation?",
         "What is the attention mechanism in transformers?",
         "How does the LoRA (Low-Rank Adaptation) method reduce the number of trainable parameters during fine-tuning?",
         "What are the core differences between BERT and GPT architectures regarding their attention mechanisms?",
@@ -112,10 +112,10 @@ if __name__ == "__main__":
         "How does the Mixture of Experts (MoE) architecture scale the capacity of a language model without a proportional increase in computational cost?",
         "What is the function of the Temperature parameter during LLM text generation/sampling?",
         "In the context of scaling laws for language models (e.g., Chinchilla paper), what is the optimal relationship between dataset size and model parameters?",
-        "What is Direct Preference Optimization (DPO) and how does it differ from traditional RLHF?"
+        "What is Direct Preference Optimization (DPO) and how does it differ from traditional RLHF?",
     ]
-    print(f"RAM available: {psutil.virtual_memory().available / 1024 ** 3:.1f} GB")
-    print(f"RAM total: {psutil.virtual_memory().total / 1024 ** 3:.1f} GB")
+    print(f"RAM available: {psutil.virtual_memory().available / 1024**3:.1f} GB")
+    print(f"RAM total: {psutil.virtual_memory().total / 1024**3:.1f} GB")
 
     bm_retriver = load_bm25_retriever(20)
     vector_retriver = load_vector_retriever(20)
@@ -132,7 +132,9 @@ if __name__ == "__main__":
     multi_query = multi_query_chain.invoke(questions[0])
     print(f"{multi_query} \n")
 
-    multi_query_chain = multiquery_rag_chain(multi_retriver)
-    final_output = multi_query_chain.invoke({"question": questions[0], "context": multi_retriver})
+    multi_query_chain = multiquery_rag_chain()
+    final_output = multi_query_chain.invoke(
+        {"question": questions[0], "context": multi_retriver}
+    )
 
     print(final_output)

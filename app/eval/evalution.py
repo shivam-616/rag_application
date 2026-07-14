@@ -1,22 +1,26 @@
 import json
-import time
 from operator import itemgetter
 
 import pandas as pd
 import psutil
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from pyarrow._dataset import Dataset
-from vertexai.generative_models import grounding
 
-from Model.model import llm, gemmni_llm
-from pipeline.Generation.chains.chain import multiquery_rag_chain, multi_query_generation_chain
-from pipeline.Retrieval.retriever import load_bm25_retriever, load_vector_retriever, rrf_multiquery_retriver
+from Model.model import gemmni_llm
+from pipeline.Generation.chains.chain import (
+    multiquery_rag_chain,
+    multi_query_generation_chain,
+)
+from pipeline.Retrieval.retriever import (
+    load_bm25_retriever,
+    load_vector_retriever,
+    rrf_multiquery_retriver,
+)
 
 
 def build_faith_dataset(questions, ground_truth):
-    print(f"RAM available: {psutil.virtual_memory().available / 1024 ** 3:.1f} GB")
-    print(f"RAM total: {psutil.virtual_memory().total / 1024 ** 3:.1f} GB")
+    print(f"RAM available: {psutil.virtual_memory().available / 1024**3:.1f} GB")
+    print(f"RAM total: {psutil.virtual_memory().total / 1024**3:.1f} GB")
 
     bm_retriver = load_bm25_retriever(20)
     vector_retriver = load_vector_retriever(20)
@@ -30,29 +34,38 @@ def build_faith_dataset(questions, ground_truth):
         question = test
         print(f"Running : {question} \n\n {gtruth}")
 
-        final_output = multi_query_chain.invoke({"question": question, "context": multi_retriver})
+        final_output = multi_query_chain.invoke(
+            {"question": question, "context": multi_retriver}
+        )
 
         query_chain = multi_query_generation_chain()
         generated_queries = query_chain.invoke(question)
         retrieved_docs = rrf_multiquery_retriver(multi_retriver, generated_queries)
         contexts = [doc[1]["doc"].page_content for doc in retrieved_docs]
-        raw = scorer.invoke({
-            "context": "\n\n".join(contexts),
-            "generated_answer": final_output
-        })
-        cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        raw = scorer.invoke(
+            {"context": "\n\n".join(contexts), "generated_answer": final_output}
+        )
+        cleaned = (
+            raw.strip()
+            .removeprefix("```json")
+            .removeprefix("```")
+            .removesuffix("```")
+            .strip()
+        )
         try:
             faith_score = json.loads(cleaned)["score"]
         except:
             faith_score = 0.0
 
-        row.append({
-            "question": question,
-            "answer": final_output,
-            "context": "\n\n".join(contexts),
-            # "ground_truth": gtruth,
-            "faithfulness": faith_score
-        })
+        row.append(
+            {
+                "question": question,
+                "answer": final_output,
+                "context": "\n\n".join(contexts),
+                # "ground_truth": gtruth,
+                "faithfulness": faith_score,
+            }
+        )
         print(f"QUESTION: {question}")
         print(f"ANSWER: {final_output[:100]}")
         print(f"RAW SCORER OUTPUT: {raw}")
@@ -91,25 +104,29 @@ def faithfull_scorer():
 
     Respond with ONLY a JSON object with exactly two keys "reasoning" and "score". No other text:"""
 
-    rag_faithfulness_prompt = ChatPromptTemplate.from_messages([
-        ("system", FAITHFULNESS_SYSTEM_PROMPT),
-        ("human", FAITHFULNESS_HUMAN_PROMPT)
-    ])
+    rag_faithfulness_prompt = ChatPromptTemplate.from_messages(
+        [("system", FAITHFULNESS_SYSTEM_PROMPT), ("human", FAITHFULNESS_HUMAN_PROMPT)]
+    )
 
-    faith_chain = ({"context": itemgetter("context"), "generated_answer": itemgetter("generated_answer")}
-                   | rag_faithfulness_prompt
-                   | gemmni_llm
-                   | output_parser)
+    faith_chain = (
+        {
+            "context": itemgetter("context"),
+            "generated_answer": itemgetter("generated_answer"),
+        }
+        | rag_faithfulness_prompt
+        | gemmni_llm
+        | output_parser
+    )
 
     return faith_chain
 
 
 def recall_scorer():
     """
-            sentences in ground truth that ARE supported by contexts
-        ─────────────────────────────────────────────────────────
-            total sentences in ground truth
-        """
+        sentences in ground truth that ARE supported by contexts
+    ─────────────────────────────────────────────────────────
+        total sentences in ground truth
+    """
     output_parser = StrOutputParser()
 
     RECALL_SYSTEM_PROMPT = """
@@ -134,22 +151,23 @@ def recall_scorer():
         Respond with ONLY a JSON object with exactly two keys "reasoning" and "score". No other text: 
         """
 
-    rag_recall_prompt = ChatPromptTemplate.from_messages([
-        ("system", RECALL_SYSTEM_PROMPT),
-        ("human", RECALL_HUMAN_PROMPT)
-    ])
+    rag_recall_prompt = ChatPromptTemplate.from_messages(
+        [("system", RECALL_SYSTEM_PROMPT), ("human", RECALL_HUMAN_PROMPT)]
+    )
 
-    recall_chain = ({"context": itemgetter("context"), "ground_truth": itemgetter("ground_truth")}
-                    | rag_recall_prompt
-                    | gemmni_llm
-                    | output_parser)
+    recall_chain = (
+        {"context": itemgetter("context"), "ground_truth": itemgetter("ground_truth")}
+        | rag_recall_prompt
+        | gemmni_llm
+        | output_parser
+    )
 
     return recall_chain
 
 
 def build_recall_dataset(questions, ground_truth):
-    print(f"RAM available: {psutil.virtual_memory().available / 1024 ** 3:.1f} GB")
-    print(f"RAM total: {psutil.virtual_memory().total / 1024 ** 3:.1f} GB")
+    print(f"RAM available: {psutil.virtual_memory().available / 1024**3:.1f} GB")
+    print(f"RAM total: {psutil.virtual_memory().total / 1024**3:.1f} GB")
 
     bm_retriver = load_bm25_retriever(20)
     vector_retriver = load_vector_retriever(20)
@@ -168,22 +186,27 @@ def build_recall_dataset(questions, ground_truth):
         retrieved_docs = rrf_multiquery_retriver(multi_retriver, generated_queries)
         contexts = [doc[1]["doc"].page_content for doc in retrieved_docs]
 
-        raw = scorer.invoke({
-            "context": "\n\n".join(contexts),
-            "ground_truth": gtruth
-        })
-        cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        raw = scorer.invoke({"context": "\n\n".join(contexts), "ground_truth": gtruth})
+        cleaned = (
+            raw.strip()
+            .removeprefix("```json")
+            .removeprefix("```")
+            .removesuffix("```")
+            .strip()
+        )
         try:
             recall_score = json.loads(cleaned)["score"]
         except:
             recall_score = 0.0
 
-        row.append({
-            "question": question,
-            "context": "\n\n".join(contexts),
-            "ground_truth": gtruth,
-            "recall_score": recall_score
-        })
+        row.append(
+            {
+                "question": question,
+                "context": "\n\n".join(contexts),
+                "ground_truth": gtruth,
+                "recall_score": recall_score,
+            }
+        )
 
         print(f"QUESTION: {question}")
         print(f"RAW SCORER OUTPUT: {raw}")
@@ -206,7 +229,7 @@ if __name__ == "__main__":
         "How does the Mixture of Experts (MoE) architecture scale the capacity of a language model without a proportional increase in computational cost?",
         "What is the function of the Temperature parameter during LLM text generation/sampling?",
         "In the context of scaling laws for language models (e.g., Chinchilla paper), what is the optimal relationship between dataset size and model parameters?",
-        "What is Direct Preference Optimization (DPO) and how does it differ from traditional RLHF?"
+        "What is Direct Preference Optimization (DPO) and how does it differ from traditional RLHF?",
     ]
 
     gtruth = [
@@ -220,10 +243,10 @@ if __name__ == "__main__":
         "MoE replaces dense layers with sparse MoE layers where each token is routed to only a few 'expert' sub-networks, keeping the compute per token constant while expanding total parameters.",
         "Temperature scales the logits before the softmax layer. Lowering temperature makes the distribution sharper and output more deterministic, while raising it increases diversity and randomness.",
         "The Chinchilla scaling laws state that for optimal compute training, model size and the number of training tokens should be scaled in equal proportion.",
-        "DPO parameterizes the reward function directly within the language model policy, allowing it to optimize for human preferences using a simple binary cross-entropy loss without needing a separate reward model or RL training phase."
+        "DPO parameterizes the reward function directly within the language model policy, allowing it to optimize for human preferences using a simple binary cross-entropy loss without needing a separate reward model or RL training phase.",
     ]
     # dataset = build_eval_dataset(question, gtruth)
 
     # dataset = build_faith_dataset(question[:7], gtruth[:7])
 
-    dataset = build_recall_dataset(question[:7]  , gtruth[:7])
+    dataset = build_recall_dataset(question[:7], gtruth[:7])

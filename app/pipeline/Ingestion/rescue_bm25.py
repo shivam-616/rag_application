@@ -1,5 +1,4 @@
 import pickle
-import os
 from pathlib import Path
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -12,17 +11,16 @@ print("Connecting to ChromaDB...")
 device = "cuda" if __import__("torch").cuda.is_available() else "cpu"
 embeddings = HuggingFaceEmbeddings(
     model_name=config.EMBEDDING_MODEL_NAME,
-    model_kwargs={"trust_remote_code": True, "device": device}
+    model_kwargs={"trust_remote_code": True, "device": device},
 )
 
 vector_store = Chroma(
-    persist_directory=config.CHROMA_DB_DIR,
-    embedding_function=embeddings
+    persist_directory=config.CHROMA_DB_DIR, embedding_function=embeddings
 )
 
 # 2. Fetch EVERYTHING currently inside ChromaDB
 print("Fetching existing chunks from ChromaDB...")
-db_contents = vector_store.get() # .get() with no arguments returns everything
+db_contents = vector_store.get()  # .get() with no arguments returns everything
 
 documents_text = db_contents.get("documents", [])
 metadatas = db_contents.get("metadatas", [])
@@ -43,4 +41,6 @@ bm25_store_path = Path(config.CHROMA_DB_DIR) / "bm25_chunks.pkl"
 with open(bm25_store_path, "wb") as f:
     pickle.dump(bmdoc, f)
 
-print(f"\n🎉 Success! Extracted {len(bmdoc)} chunks from Chroma and saved to {bm25_store_path}.")
+print(
+    f"\n🎉 Success! Extracted {len(bmdoc)} chunks from Chroma and saved to {bm25_store_path}."
+)

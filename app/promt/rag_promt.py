@@ -17,7 +17,6 @@ RAG_HUMAN_PROMPT = """QUESTION: {question}
 
 Answer strictly from the context above:"""
 
-rag_basic_prompt = ChatPromptTemplate.from_messages([
-    ("system", RAG_SYSTEM_PROMPT),
-    ("human", RAG_HUMAN_PROMPT)
-])
+rag_basic_prompt = ChatPromptTemplate.from_messages(
+    [("system", RAG_SYSTEM_PROMPT), ("human", RAG_HUMAN_PROMPT)]
+)

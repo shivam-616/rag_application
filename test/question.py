@@ -9,7 +9,7 @@ questions = [
     "How does the Mixture of Experts (MoE) architecture scale the capacity of a language model without a proportional increase in computational cost?",
     "What is the function of the Temperature parameter during LLM text generation/sampling?",
     "In the context of scaling laws for language models (e.g., Chinchilla paper), what is the optimal relationship between dataset size and model parameters?",
-    "What is Direct Preference Optimization (DPO) and how does it differ from traditional RLHF?"
+    "What is Direct Preference Optimization (DPO) and how does it differ from traditional RLHF?",
 ]
 answer = [
     "RAG is a method that combines retrieval of relevant documents with LLM generation to produce grounded answers."
@@ -23,5 +23,4 @@ answer = [
     "Temperature scales the logits before the softmax layer. Lowering temperature makes the distribution sharper and output more deterministic, while raising it increases diversity and randomness."
     "The Chinchilla scaling laws state that for optimal compute training, model size and the number of training tokens should be scaled in equal proportion."
     "DPO parameterizes the reward function directly within the language model policy, allowing it to optimize for human preferences using a simple binary cross-entropy loss without needing a separate reward model or RL training phase."
-
 ]

@@ -2,14 +2,13 @@
 ## exacr match
 ## Semantic Retrievel
 ## metadata Filtering
-from langchain_core.documents import Document
 import pytest
-import numpy as np
 
 
 @pytest.fixture
 def set_up_vectorstore():
-   chrom
+    chrom
+
 
 def test_similarity(set_up_vectorstore):
     vectorstore = set_up_vectorstore

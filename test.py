@@ -10,6 +10,7 @@ OUTPUT_DIR = "arxiv_dataset"
 
 # ---------------------
 
+
 def download_arxiv_subset():
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -33,7 +34,6 @@ def download_arxiv_subset():
         "2401.15884",
         "2404.16130",
         "2405.16506",
-
     ]
     rag_queries = [
         '"retrieval augmented generation"',
@@ -50,7 +50,7 @@ def download_arxiv_subset():
     search = arxiv.Search(
         query=rag_queries,
         sort_by=arxiv.SortCriterion.SubmittedDate,
-        sort_order=arxiv.SortOrder.Ascending
+        sort_order=arxiv.SortOrder.Ascending,
     )
     # search = arxiv.Search(id_list=ids)
     results = client.results(search)
@@ -71,8 +71,13 @@ def download_arxiv_subset():
             print(f"Downloading: {filename}...", end="", flush=True)
 
             # Fetch using standard urllib from the direct PDF address
-            req = urllib.request.Request(paper.pdf_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req) as response, open(filepath, 'wb') as out_file:
+            req = urllib.request.Request(
+                paper.pdf_url, headers={"User-Agent": "Mozilla/5.0"}
+            )
+            with (
+                urllib.request.urlopen(req) as response,
+                open(filepath, "wb") as out_file,
+            ):
                 out_file.write(response.read())
 
             # Update metrics tracker
@@ -87,7 +92,9 @@ def download_arxiv_subset():
             print(f" Failed: {e}")
             time.sleep(2)
 
-    print(f"\n✅ Success! Your {current_size_mb:.2f} MB PDF dataset is ready in '{OUTPUT_DIR}'.")
+    print(
+        f"\n✅ Success! Your {current_size_mb:.2f} MB PDF dataset is ready in '{OUTPUT_DIR}'."
+    )
 
 
 if __name__ == "__main__":
