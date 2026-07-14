@@ -11,7 +11,7 @@ print("Connecting to ChromaDB...")
 # 1. Connect to your existing ChromaDB
 device = "cuda" if __import__("torch").cuda.is_available() else "cpu"
 embeddings = HuggingFaceEmbeddings(
-    model_name=config.MODEL_NAME,
+    model_name=config.EMBEDDING_MODEL_NAME,
     model_kwargs={"trust_remote_code": True, "device": device}
 )
 

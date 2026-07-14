@@ -63,7 +63,7 @@ pipeline_options.table_structure_options.do_cell_matching = True
 
 # Tokenizer for accurate token counting
 tokenizer = AutoTokenizer.from_pretrained(
-    config.MODEL_NAME, trust_remote_code=True
+    config.EMBEDDING_MODEL_NAME, trust_remote_code=True
 )
 
 
@@ -121,7 +121,7 @@ def process_single_pdf(pdf_file: Path):
             file_path=str(pdf_file),
             export_type=ExportType.DOC_CHUNKS,
             chunker=HybridChunker(
-                tokenizer=config.MODEL_NAME,
+                tokenizer=config.EMBEDDING_MODEL_NAME,
                 max_tokens=config.MAX_TOKENS,
                 merge_peers=config.MERGE_PEERS,
             ),

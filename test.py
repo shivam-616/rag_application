@@ -18,13 +18,41 @@ def download_arxiv_subset():
     print(f"🚀 Starting download. Target size: {TARGET_SIZE_MB} MB")
 
     # Initialize modern arxiv client
-    client = arxiv.Client(page_size=100, delay_seconds=3, num_retries=5)
-    search = arxiv.Search(
-        query="cat:cs.AI",
-        sort_by=arxiv.SortCriterion.SubmittedDate,
-        sort_order=arxiv.SortOrder.Descending
-    )
+    ids = [
+        "2005.11401",  # RAG
+        "1706.03762",  # Attention Is All You Need
+        "1810.04805",  # BERT
+        "2106.09685",
+        "2004.04906",
+        "2007.00808",
+        "2205.11487",
+        "2212.10496",
+        "2210.03629",
+        "2307.03172",
+        "2310.11511",
+        "2401.15884",
+        "2404.16130",
+        "2405.16506",
 
+    ]
+    rag_queries = [
+        '"retrieval augmented generation"',
+        "RAG",
+        '"dense retrieval"',
+        '"open domain question answering"',
+        '"vector database"',
+        '"retrieval"',
+        '"document retrieval"',
+        '"knowledge intensive"',
+    ]
+    client = arxiv.Client(page_size=100, delay_seconds=3, num_retries=5)
+
+    search = arxiv.Search(
+        query=rag_queries,
+        sort_by=arxiv.SortCriterion.SubmittedDate,
+        sort_order=arxiv.SortOrder.Ascending
+    )
+    # search = arxiv.Search(id_list=ids)
     results = client.results(search)
 
     for paper in results:

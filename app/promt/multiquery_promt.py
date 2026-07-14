@@ -4,8 +4,8 @@ from langchain_core.output_parsers import BaseOutputParser
 # custom parser to split the LLM's newline-separated output into a list
 class LineListOutputParser(BaseOutputParser):
     def parse(self, text: str):
-        lines = text.strip().split("\n")
-        return [l.strip() for l in lines if l.strip()]
+        return [cleaned for l in text.splitlines() if (cleaned := l.strip())]
+
 
 MULTI_QUERY_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an AI assistant helping to improve document retrieval.

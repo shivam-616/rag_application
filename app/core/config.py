@@ -11,6 +11,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN")
 
 # Model 2
 Gemini_MODEL_NAME = "gemini-2.5-flash"
+OLLAMA_MODEL_NAME = "llama3.2"
 # Model  1
 EMBEDDING_MODEL_NAME = "jinaai/jina-embeddings-v3"
 MAX_TOKENS = 1000
